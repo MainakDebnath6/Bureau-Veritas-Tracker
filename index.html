@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Dataset for Distance Calculation</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAB5bmfuWLbZX8GFi3A_dv_X59KIbVvIh0&libraries=places,directions" async defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.0/gsap.min.js"></script>
+
+    <style>
+        /* General Styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #2d2d2d;
+            color: #fff;
+            scroll-behavior: smooth;
+        }
+
+        /* Header Styling */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: #1d1d1d;
+            color: white;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateY(-50px);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+        }
+
+        #logo {
+            height: 80px;
+            width: 80px;
+            margin-top: 5px;
+        }
+
+        /* Search Bar Styling */
+        #searchSection {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        #searchSection input[type="text"] {
+            padding: 12px;
+            width: 80%;
+            max-width: 450px;
+            border-radius: 25px;
+            border: 2px solid #555;
+            font-size: 16px;
+            margin-right: 15px;
+            background-color: #333;
+            color: #fff;
+        }
+
+        #searchSection button {
+            padding: 12px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #searchSection button:hover {
+            background-color: #45a049;
+        }
+
+        /* Map Styling */
+        #map {
+            width: 80%;  /* Reduced width */
+            height: 450px;
+            margin-top: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-left: 10%; /* Center map */
+            opacity: 0;
+        }
+
+        /* File Upload Section */
+        #uploadSection {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            font-size: 16px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+        }
+
+        button {
+            padding: 12px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Tables Styling */
+        .table-container {
+            width: 80%;
+            margin: 40px auto;
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            max-height: 300px;
+            overflow-y: auto;
+            opacity: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            font-size: 16px;
+        }
+
+        th {
+            background-color: #444;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        td {
+            border-bottom: 1px solid #555;
+            color: #fff;
+        }
+
+        /* Scrollbar Styling */
+        .table-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #2196F3;
+            border-radius: 3px;
+        }
+
+        /* Footer Styling */
+        footer {
+            text-align: center;
+            padding: 15px;
+            background-color: #1d1d1d;
+            color: white;
+            font-size: 14px;
+            margin-top: 40px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            #searchSection input[type="text"], #searchSection button {
+                width: 90%;
+                margin-bottom: 20px;
+            }
+
+            #map {
+                height: 350px;
+                width: 100%;  /* Full width on small screens */
+                margin-left: 0;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+        }
+
+        /* Styling for the site table */
+        #siteTableContainer {
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            display: none;
+            margin-top: 30px;
+            max-height: 300px;
+            overflow-y: auto;
+            opacity: 0;
+        }
+
+        .owner-name {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img id="logo" src="../Bureau_Veritas.svg.png" alt="Bureau Veritas Logo">
+    <h1>Employee Distance API Matrix</h1>
+</header>
+
+<!-- Search Bar -->
+<div id="searchSection">
+    <input type="text" id="locationSearch" placeholder="Search for a location">
+    <button onclick="searchLocation()">Search</button>
+</div>
+
+<!-- Map -->
+<div id="map"></div>
+
+<!-- File Upload Section -->
+<div id="uploadSection">
+    <input type="file" id="fileInput" accept=".xlsx, .xls" required>
+    <button onclick="processFile()">Upload Dataset</button>
+</div>
+
+<!-- Owner and Total Distance Table -->
+<div class="table-container" id="tableContainer">
+    <h3>Owner and Total Distance Information</h3>
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>Owner</th>
+                <th>Total Distance (km)</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- Sites Visited by Selected Owner -->
+<div class="table-container" id="siteTableContainer">
+    <h3><span id="ownerName"></span>'s Sites Visited</h3>
+    <table id="siteTable">
+        <thead>
+            <tr>
+                <th>Site</th>
+                <th>Distance (km)</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- Footer -->
+<footer>
+    <p>Created By Mainak Debnath, Arjak Ghosh</p>
+</footer>
+
+<script>
+    let map, directionsService, directionsRenderer, bureauVeritasMarker;
+    let ownerData = {};  // Store all owner data
+    let currentMarkers = [];  // Store current markers on the map
+
+    // Initialize the map
+    function initMap() {
+        const bureauVeritasLocation = { lat: 22.576925, lng: 88.428119 };
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: bureauVeritasLocation,
+            zoom: 13
+        });
+
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer({
+            map: map,
+            suppressMarkers: true
+        });
+
+        bureauVeritasMarker = new google.maps.Marker({
+            position: bureauVeritasLocation,
+            map: map,
+            title: "Bureau Veritas Kolkata Office"
+        });
+
+        // GSAP animation for the header
+        gsap.to("header", { opacity: 1, y: 0, duration: 1, ease: "power4.out" });
+        gsap.to("#map", { opacity: 1, duration: 1, delay: 0.5, ease: "power4.out" });
+    }
+
+    // Handle location search
+    function searchLocation() {
+        const locationInput = document.getElementById('locationSearch').value;
+        const geocoder = new google.maps.Geocoder();
+
+        geocoder.geocode({ address: locationInput }, function(results, status) {
+            if (status === 'OK') {
+                const destinationLat = results[0].geometry.location.lat();
+                const destinationLng = results[0].geometry.location.lng();
+
+                map.setCenter({ lat: destinationLat, lng: destinationLng });
+                map.setZoom(14);
+                const destinationMarker = new google.maps.Marker({
+                    position: { lat: destinationLat, lng: destinationLng },
+                    map: map,
+                    title: locationInput
+                });
+
+                // Draw the route to Bureau Veritas
+                const request = {
+                    origin: { lat: 22.576925, lng: 88.428119 },
+                    destination: { lat: destinationLat, lng: destinationLng },
+                    travelMode: google.maps.TravelMode.DRIVING
+                };
+
+                directionsService.route(request, (response, status) => {
+                    if (status === google.maps.DirectionsStatus.OK) {
+                        directionsRenderer.setDirections(response);
+                    }
+                });
+            } else {
+                alert("Location not found");
+            }
+        });
+    }
+
+    // Process the uploaded file and display the table
+    async function processFile() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async function(e) {
+            const data = e.target.result;
+            const workbook = XLSX.read(data, {type: 'binary'});
+
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+
+            const jsonData = XLSX.utils.sheet_to_json(sheet);
+            const rows = jsonData.map(async (row) => {
+                if (row['Full Location']) {
+                    const location = row['Full Location'];
+                    try {
+                        const distance = await getDistance(location);
+                        row.Distance = distance;
+                    } catch (err) {
+                        row.Distance = 'Error';
+                    }
+                }
+                return row;
+            });
+
+            const result = await Promise.all(rows);
+            aggregateAndDisplay(result);
+        };
+
+        reader.readAsBinaryString(file);
+    }
+
+    // Get the distance from Bureau Veritas Kolkata
+    async function getDistance(location) {
+        const geocoder = new google.maps.Geocoder();
+        return new Promise((resolve, reject) => {
+            geocoder.geocode({ address: location }, async (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    const destinationLat = results[0].geometry.location.lat();
+                    const destinationLng = results[0].geometry.location.lng();
+                    try {
+                        const distance = await calculateDistanceFromBureauVeritas(destinationLat, destinationLng);
+                        resolve(distance);
+                    } catch (err) {
+                        reject('Distance calculation failed');
+                    }
+                } else {
+                    reject('Location not found');
+                }
+            });
+        });
+    }
+
+    // Calculate the distance using Google Directions API
+    async function calculateDistanceFromBureauVeritas(destinationLat, destinationLng) {
+        const bureauVeritasLocation = {lat: 22.5726, lng: 88.3639};
+        const destination = {lat: destinationLat, lng: destinationLng};
+
+        const request = {
+            origin: bureauVeritasLocation,
+            destination: destination,
+            travelMode: google.maps.TravelMode.DRIVING
+        };
+
+        return new Promise((resolve, reject) => {
+            directionsService.route(request, (response, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    const distance = response.routes[0].legs[0].distance.text;
+                    resolve(distance);
+                } else {
+                    reject('Could not calculate distance');
+                }
+            });
+        });
+    }
+
+    // Aggregate distances by Owner
+    function aggregateAndDisplay(data) {
+        const ownerDistances = {};
+        ownerData = {}; // Reset ownerData
+
+        data.forEach(row => {
+            const owner = row.Owner || 'Unknown';
+            const distance = row.Distance || 'N/A';
+
+            if (!ownerDistances[owner]) {
+                ownerDistances[owner] = 0;
+                ownerData[owner] = []; // Initialize an array to hold sites for each owner
+            }
+
+            if (distance !== 'N/A') {
+                const distanceValue = parseFloat(distance.split(' ')[0]);
+                if (!isNaN(distanceValue)) {
+                    ownerDistances[owner] += distanceValue;
+                    ownerData[owner].push({ location: row['Full Location'], distance: distance });  // Store site data
+                }
+            }
+        });
+
+        displayAggregatedData(ownerDistances);
+    }
+
+    // Display the aggregated data in the table
+    function displayAggregatedData(ownerDistances) {
+        const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+
+        Object.keys(ownerDistances).forEach(owner => {
+            const newRow = tableBody.insertRow();
+            const ownerCell = newRow.insertCell(0);
+            const distanceCell = newRow.insertCell(1);
+
+            ownerCell.textContent = owner;
+            distanceCell.textContent = ownerDistances[owner].toFixed(2) + ' km';
+
+            // Add click event to owner name
+            ownerCell.style.cursor = 'pointer';
+            ownerCell.onclick = () => showSites(owner);
+        });
+
+        gsap.to("#tableContainer", { opacity: 1, duration: 1, ease: "power4.out" });
+    }
+
+    // Show the sites visited by the selected owner
+    function showSites(owner) {
+        const siteTableBody = document.getElementById('siteTable').getElementsByTagName('tbody')[0];
+        siteTableBody.innerHTML = ''; // Clear existing table rows
+
+        // Clear all markers on the map
+        clearMapMarkers();
+
+        // Show the table with sites data
+        document.getElementById('siteTableContainer').style.display = 'block';
+        document.getElementById('ownerName').textContent = owner;  // Display owner's name in the header
+
+        // Add rows for each site visited by the owner
+        ownerData[owner].forEach(site => {
+            const newRow = siteTableBody.insertRow();
+            const siteCell = newRow.insertCell(0);
+            const distanceCell = newRow.insertCell(1);
+
+            siteCell.textContent = site.location;
+            distanceCell.textContent = site.distance;
+
+            // Mark the site on the map
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: site.location }, function(results, status) {
+                if (status === 'OK') {
+                    const siteLat = results[0].geometry.location.lat();
+                    const siteLng = results[0].geometry.location.lng();
+                    const siteMarker = new google.maps.Marker({
+                        position: { lat: siteLat, lng: siteLng },
+                        map: map,
+                        title: site.location
+                    });
+
+                    currentMarkers.push(siteMarker);
+                }
+            });
+        });
+
+        gsap.to("#siteTableContainer", { opacity: 1, duration: 1, ease: "power4.out" });
+    }
+
+    // Clear all markers on the map
+    function clearMapMarkers() {
+        currentMarkers.forEach(marker => marker.setMap(null));
+        currentMarkers = []; // Reset markers array
+    }
+
+    // Initialize the map when the page loads
+    window.onload = initMap;
+</script>
+
+</body>
+</html>
